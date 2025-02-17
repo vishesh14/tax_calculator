@@ -61,56 +61,72 @@ double roundToNearest5Paise(double amount) {
   return (amount * 20).round() / 20;
 }
 
-
 Map<String, dynamic> calculateReceipt() {
-  double totalTax = 0;
-  double totalCost = 0;
-  double importedTax = 0;
-  double importedCost = 0;
+  double totalTax = 0.0;
+  double totalCost = 0.0;
+  double importedTax = 0.0;
+  double importedCost = 0.0;
+  double nonImportedTax = 0.0;
+  double nonImportedCost = 0.0;
   List<Map<String, String>> receipt = [];
 
   for (var item in cartItems) {
     double tax = 0.0;
+    double importDuty = 0.0;
 
-    if (!item['imported']) {
-      tax = item['price'] * 0.10;  
+   
+    if (!['book', 'food', 'medicine', 'chocolate', 'chocolate bar', 'box of chocolates'].contains(item['name'].toString().toLowerCase()) && !item['imported']) {
+      tax = item['price'] * 0.10; 
     }
 
    
     if (item['imported']) {
-      tax += item['price'] * 0.05;
+     
+      if (!['book', 'food', 'medicine', 'chocolate', 'chocolate bar', 'box of chocolates'].contains(item['name'].toString().toLowerCase())) {
+        tax += item['price'] * 0.10; 
+      }
+      importDuty = item['price'] * 0.05; 
     }
 
-    tax = roundToNearest5Paise(tax); 
-    double finalPricePerItem = item['price'] + tax;
-    double totalItemPrice = finalPricePerItem * item['quantity'];
+   
+    tax += importDuty;
 
-    totalTax += tax * item['quantity'];
-    totalCost += totalItemPrice;
+   
+    tax = roundToNearest5Paise(tax);  
+    double finalPricePerItem = item['price'] + tax;  
+    double totalItemPrice = finalPricePerItem * item['quantity']; 
 
+   
     if (item['imported']) {
       importedTax += tax * item['quantity'];
-      importedCost += totalItemPrice;
+      importedCost += totalItemPrice; 
+    } else {
+      nonImportedTax += tax * item['quantity']; 
+      nonImportedCost += totalItemPrice; 
     }
 
+   
     String itemName = item['imported'] ? "imported ${item['name']}" : item['name'];
+    String importDutyStr = item['imported'] ? " Import Duty: ₹${importDuty.toStringAsFixed(2)}" : "";
 
     receipt.add({
       'input': "${item['quantity']} $itemName at ${item['price'].toStringAsFixed(2)}",
-      'output': "${item['quantity']} $itemName: ${totalItemPrice.toStringAsFixed(2)}"
+      'output': "${item['quantity']} $itemName: ${totalItemPrice.toStringAsFixed(2)}$importDutyStr"
     });
   }
 
   return {
     'receipt': receipt,
-    'totalTax': totalTax,
-    'totalCost': totalCost,
+    'totalTax': nonImportedTax + importedTax,  
+    'totalCost': nonImportedCost + importedCost, 
     'importedTax': importedTax,
-    'importedCost': importedCost,
-    'nonImportedTax': totalTax - importedTax,
-    'nonImportedCost': totalCost - importedCost,
+    'importedCost': importedCost, 
+    'nonImportedTax': nonImportedTax,
+    'nonImportedCost': nonImportedCost, 
   };
 }
+
+
 
 
 
@@ -214,10 +230,10 @@ Map<String, dynamic> calculateReceipt() {
     }
   }
 
-  double importedTax = receipt['importedTax'];
-  double importedTotal = receipt['importedCost'];
-  double nonImportedTax = receipt['nonImportedTax'];
-  double nonImportedTotal = receipt['nonImportedCost'];
+ double importedTax = receipt['importedTax'] ?? 0.0;
+double importedTotal = receipt['importedCost'] ?? 0.0;
+double nonImportedTax = receipt['nonImportedTax'] ?? 0.0;
+double nonImportedTotal = receipt['nonImportedCost'] ?? 0.0;
 
   return Column(
     children: [
